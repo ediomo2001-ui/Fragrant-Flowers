@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fragrant Flowers Blossom - HD Player & Video Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        navy: {
+                            900: '#0a0e27',
+                            800: '#0f172a',
+                            700: '#1e293b',
+                            600: '#334155',
+                        },
+                        accent: {
+                            blue: '#3b82f6',
+                            cyan: '#06b6d4',
+                            purple: '#8b5cf6',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .video-container {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .control-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .playlist-item {
+            transition: all 0.3s ease;
+        }
+        
+        .playlist-item:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .playlist-item.active {
+            background: rgba(59, 130, 246, 0.3);
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
+        }
+        
+        .quality-badge {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+        
+        .notification {
+            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%) translateY(-50%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0) translateY(-50%);
+                opacity: 1;
+            }
+        }
+        
+        .generator-canvas {
+            background: #000;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .effect-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .effect-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+        }
+        
+        .effect-card.selected {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .upload-zone {
+            border: 2px dashed rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .tab-active {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="text-gray-100 font-sans antialiased overflow-x-hidden">
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-6 right-6 z-50 space-y-2"></div>
+
+    <!-- Header -->
+    <header class="glass-panel sticky top-0 z-40 border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-film text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-serif font-bold text-white tracking-wide">Fragrant Flowers Blossom</h1>
+                    <p class="text-xs text-gray-400">HD Player & Studio</p>
+                </div>
+            </div>
+            
+            <nav class="hidden md:flex space-x-1">
+                <button onclick="switchTab('player')" id="tab-player" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors tab-active">
+                    <i class="fas fa-play-circle mr-2"></i>Player
+                </button>
+                <button onclick="switchTab('generator')" id="tab-generator" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-magic mr-2"></i>Video Generator
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <button class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                    <i class="fas fa-cog text-sm text-gray-400"></i>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold">
+                    F
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- PLAYER TAB -->
+        <div id="view-player" class="space-y-6 animate-fade-in">
+            
+            <!-- Video Info -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">HD</span>
+                        <span class="px-2 py-0.5 rounded text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">Season 1</span>
+                    </div>
+                    <h2 id="current-title" class="text-2xl md:text-3xl font-serif font-bold text-white">Episode 1 - Rintaro and Kaori</h2>
+                    <p class="text-gray-400 text-sm mt-1">Drama • Romance • 24 min</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="togglePlaylist()" class="control-btn px-4 py-2 rounded-lg bg-white/5 border border-white/10 flex items-center space-x-2 text-sm">
+                        <i class="fas fa-list-ul"></i>
+                        <span>Playlist</span>
+                        <span id="playlist-count" class="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">12</span>
+                    </button>
+                    <button class="control-btn px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium shadow-lg shadow-blue-600/20">
+                        <i class="fas fa-share-alt mr-2"></i>Share
+                    </button>
+                </div>
+            </div>
+
+            <!-- Video Player Area -->
+            <div class="relative video-container rounded-2xl overflow-hidden bg-black aspect-video group">
+                <video id="main-video" class="w-full h-full object-contain" poster="https://images.unsplash.com/photo-1490750967868-88aa2f6fce10?w=1920&h=1080&fit=crop">
+                    <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" type="video/mp4">
+                </video>
+
+                <!-- Quality Badge -->
+                <div class="absolute top-4 right-4 quality-badge px-3 py-1 rounded-full text-xs font-bold text-white border border-white/20">
+                    <i class="fas fa-badge-hd mr-1"></i>1080p
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="video-loading" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+
+                <!-- Custom Controls Overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    
+                    <!-- Progress Bar -->
+                    <div class="w-full h-1 bg-white/20 rounded-full mb-4 cursor-pointer group/progress" onclick="seekVideo(event)">
+                        <div id="progress-fill" class="h-full progress-bar rounded-full relative" style="width: 0%">
+                            <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg scale-0 group-hover/progress:scale-100 transition-transform"></div>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <button onclick="togglePlay()" class="control-btn w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
+                                <i id="play-icon" class="fas fa-play ml-0.5"></i>
+                            </button>
+                            <button onclick="skip(-10)" class="control-btn w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-300 text-sm">
+                                <i class="fas fa-backward"></i>
+                            </button>
+                            <button onclick="skip(10)" class="control-btn w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-300 text-sm">
+                                <i class="fas fa-forward"></i>
+                            </button>
+                            
+                            <div class="flex items-center space-x-2 group/volume">
+                                <button onclick="toggleMute()" class="control-btn text-gray-300">
+                                    <i id="volume-icon" class="fas fa-volume-up"></i>
+                                </button>
+                                <div class="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-300">
+                                    <input type="range" min="0" max="100" value="70" class="w-20 accent-blue-500" oninput="setVolume(this.value)">
+                                </div>
+                            </div>
+                            
+                            <span class="text-xs text-gray-400 font-mono">
+                                <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <button onclick="toggleSettings()" class="control-btn text-gray-300 px-3 py-1 rounded bg-white/5 text-sm">
+                                <i class="fas fa-cog mr-1"></i>Settings
+                            </button>
+                            <button onclick="toggleFullscreen()" class="control-btn w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Play Button (initial state) -->
+                <div id="center-play" class="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer" onclick="togglePlay()">
+                    <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shadow-2xl hover:scale-110 transition-transform">
+                        <i class="fas fa-play text-3xl text-white ml-1"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlist Sidebar (Collapsible) -->
+            <div id="playlist-panel" class="glass-panel rounded-2xl p-6 hidden animate-slide-up">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white">Up Next</h3>
+                    <button onclick="togglePlaylist()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-2 max-h-96 overflow-y-auto" id="playlist-items">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <!-- Episode Description -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-2">About this episode</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    In the first episode of "Fragrant Flowers Blossom," we are introduced to Rintaro, a reserved botanist who has dedicated his life to preserving rare flower species. His world changes when he meets Kaori, a vibrant photographer who arrives at his greenhouse to capture images of an endangered cherry blossom variant. As they work together to document the flower's brief blooming period, an unexpected connection begins to grow between them.
+                </p>
+                <div class="mt-4 flex items-center space-x-4 text-sm text-gray-500">
+                    <span><i class="fas fa-calendar mr-2"></i>April 2024</span>
+                    <span><i class="fas fa-eye mr-2"></i>2.4M views</span>
+                    <span><i class="fas fa-heart mr-2"></i>98% liked</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- GENERATOR TAB -->
+        <div id="view-generator" class="hidden space-y-6 animate-fade-in">
+            
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-serif font-bold text-white mb-2">AI Video Studio</h2>
+                <p class="text-gray-400">Transform your images into cinematic short videos with AI-powered effects</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+                
+                <!-- Left Panel: Upload & Settings -->
+                <div class="lg:col-span-1 space-y-6">
+                    
+                    <!-- Upload Zone -->
+                    <div class="glass-panel rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">1. Upload Image</h3>
+                        <div class="upload-zone rounded-xl p-8 text-center cursor-pointer" onclick="document.getElementById('image-input').click()" ondrop="dropHandler(event)" ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)" id="upload-zone">
+                            <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)">
+                            <div id="upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-blue-500 mb-3"></i>
+                                <p class="text-gray-300 font-medium">Drop image here or click to browse</p>
+                                <p class="text-gray-500 text-sm mt-1">Supports JPG, PNG, WebP</p>
+                            </div>
+                            <div id="upload-preview" class="hidden">
+                                <img id="preview-img" class="max-h-48 mx-auto rounded-lg shadow-lg object-contain">
+                                <button onclick="event.stopPropagation(); clearUpload()" class="mt-3 text-sm text-red-400 hover:text-red-300">
+                                    <i class="fas fa-trash mr-1"></i>Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Effect Selection -->
+                    <div class="glass-panel rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">2. Choose Effect</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="effect-card selected rounded-xl p-4 border border-white/10 bg-white/5" onclick="selectEffect('cinematic')" data-effect="cinematic">
+                                <i class="fas fa-film text-2xl text-blue-400 mb-2"></i>
+                                <h4 class="font-medium text-white text-sm">Cinematic Pan</h4>
+                                <p class="text-xs text-gray-500 mt-1">Slow zoom & pan</p>
+                            </div>
+                            <div class="effect-card rounded-xl p-4 border border-white/10 bg-white/5" onclick="selectEffect('parallax')" data-effect="parallax">
+                                <i class="fas fa-layer-group text-2xl text-purple-400 mb-2"></i>
+                                <h4 class="font-medium text-white text-sm">3D Parallax</h4>
+                                <p class="text-xs text-gray-500 mt-1">Depth illusion</p>
+                            </div>
+                            <div class="effect-card rounded-xl p-4 border border-white/10 bg-white/5" onclick="selectEffect('bloom')" data-effect="bloom">
+                                <i class="fas fa-sun text-2xl text-yellow-400 mb-2"></i>
+                                <h4 class="font-medium text-white text-sm">Light Bloom</h4>
+                                <p class="text-xs text-gray-500 mt-1">Glow & breathing</p>
+                            </div>
+                            <div class="effect-card rounded-xl p-4 border border-white/10 bg-white/5" onclick="selectEffect('glitch')" data-effect="glitch">
+                                <i class="fas fa-bolt text-2xl text-red-400 mb-2"></i>
+                                <h4 class="font-medium text-white text-sm">Cyber Glitch</h4>
+                                <p class="text-xs text-gray-500 mt-1">Digital distortion</p>
+                            </div>
+                            <div class="effect-card rounded-xl p-4 border border-white/10 bg-white/5" onclick="selectEffect('water')" data-effect="water">
+                                <i class="fas fa-water text-2xl text-cyan-400 mb-2"></i>
+                                <h4 class="font-medium text-white text-sm">Water Ripple</h4>
+                                <p class="text-xs text-gray-500 mt-1">Wave distortion</p>
+                            </div>
+                            <div class="effect-card rounded-xl p-4 border border-white/10 bg-white/5" onclick="selectEffect('particles')" data-effect="particles">
+                                <i class="fas fa-snowflake text-2xl text-white mb-2"></i>
+                                <h4 class="font-medium text-white text-sm">Particle Snow</h4>
+                                <p class="text-xs text-gray-500 mt-1">Falling elements</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duration & Settings -->
+                    <div class="glass-panel rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">3. Configure</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm text-gray-400 mb-1 block">Duration</label>
+                                <input type="range" min="3" max="15" value="5" class="w-full accent-blue-500" id="duration-slider" oninput="updateDurationLabel(this.value)">
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>3s</span>
+                                    <span id="duration-label" class="text-blue-400 font-medium">5s</span>
+                                    <span>15s</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-400 mb-1 block">Quality</label>
+                                <select id="quality-select" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                                    <option value="720">HD (720p)</option>
+                                    <option value="1080" selected>Full HD (1080p)</option>
+                                    <option value="4k">4K Ultra HD</option>
+                                </select>
+                            </div>
+                            <button onclick="generateVideo()" id="generate-btn" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold shadow-lg shadow-blue-600/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <i class="fas fa-wand-magic-sparkles mr-2"></i>Generate Video
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Preview -->
+                <div class="lg:col-span-2">
+                    <div class="glass-panel rounded-2xl p-6 h-full flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">Preview</h3>
+                            <div id="render-status" class="text-sm text-gray-400 hidden">
+                                <i class="fas fa-circle-notch fa-spin mr-2"></i>Rendering...
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 relative rounded-xl overflow-hidden bg-black generator-canvas flex items-center justify-center min-h-[400px]" id="canvas-container">
+                            <canvas id="generator-canvas" class="max-w-full max-h-full hidden"></canvas>
+                            
+                            <div id="empty-state" class="text-center p-8">
+                                <div class="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 animate-float">
+                                    <i class="fas fa-image text-4xl text-gray-600"></i>
+                                </div>
+                                <p class="text-gray-500">Upload an image to begin</p>
+                                <p class="text-gray-600 text-sm mt-1">Your generated video will appear here</p>
+                            </div>
+
+                            <div id="rendering-overlay" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center hidden z-10">
+                                <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                <p class="text-white font-medium">Generating video...</p>
+                                <p class="text-gray-400 text-sm mt-1" id="render-progress">0%</p>
+                            </div>
+                        </div>
+
+                        <!-- Generated Actions -->
+                        <div id="generated-actions" class="mt-4 flex justify-end space-x-3 hidden">
+                            <button onclick="downloadVideo()" class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors">
+                                <i class="fas fa-download mr-2"></i>Download MP4
+                            </button>
+                            <button onclick="addToPlaylist()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Add to Playlist
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ============ NOTIFICATION SYSTEM ============
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            
+            const colors = {
+                info: 'bg-blue-500/20 border-blue-500/30 text-blue-200',
+                success: 'bg-green-500/20 border-green-500/30 text-green-200',
+                error: 'bg-red-500/20 border-red-500/30 text-red-200',
+                warning: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-200'
+            };
+            
+            const icons = {
+                info: 'fa-info-circle',
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle'
+            };
+            
+            notification.className = `notification glass-panel ${colors[type]} border px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 min-w-[300px]`;
+            notification.innerHTML = `
+                <i class="fas ${icons[type]}"></i>
+                <span class="text-sm font-medium">${message}</span>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                notification.style.transition = 'all 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // ============ TAB SWITCHING ============
+        function switchTab(tab) {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.remove('tab-active', 'text-white');
+                el.classList.add('text-gray-400');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-white');
+            document.getElementById(`tab-${tab}`).classList.remove('text-gray-400');
+        }
+
+        // ============ VIDEO PLAYER LOGIC ============
+        const video = document.getElementById('main-video');
+        const playIcon = document.getElementById('play-icon');
+        const centerPlay = document.getElementById('center-play');
+        const progressFill = document.getElementById('progress-fill');
+        const currentTimeEl = document.getElementById('current-time');
+        const durationEl = document.getElementById('duration');
+        const videoLoading = document.getElementById('video-loading');
+
+        const episodes = [
+            { title: "Episode 1 - Rintaro and Kaori", duration: "24:15", desc: "A fateful meeting at the greenhouse..." },
+            { title: "Episode 2 - The Rare Bloom", duration: "23:48", desc: "Discovering the endangered species..." },
+            { title: "Episode 3 - Rainy Afternoon", duration: "25:02", desc: "Sheltering from the storm..." },
+            { title: "Episode 4 - Petals in the Wind", duration: "24:30", desc: "A confession among the flowers..." },
+            { title: "Episode 5 - Crossroads", duration: "23:55", desc: "Difficult choices ahead..." },
+            { title: "Episode 6 - Fragrant Memories", duration: "24:45", desc: "Looking back at the journey..." },
+        ];
+
+        let currentEpisode = 0;
+
+        function initPlaylist() {
+            const container = document.getElementById('playlist-items');
+            container.innerHTML = episodes.map((ep, idx) => `
+                <div class="playlist-item ${idx === currentEpisode ? 'active' : ''} rounded-xl p-3 cursor-pointer flex items-center space-x-3" onclick="playEpisode(${idx})">
+                    <div class="w-12 h-12 rounded-lg bg-gray-800 flex items-center justify-center text-gray-500 font-bold text-sm">
+                        ${idx + 1}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-white text-sm font-medium truncate">${ep.title}</h4>
+                        <p class="text-gray-500 text-xs">${ep.duration}</p>
+                    </div>
+                    ${idx === currentEpisode ? '<i class="fas fa-play text-blue-400 text-xs"></i>' : ''}
+                </div>
+            `).join('');
+        }
+
+        function togglePlaylist() {
+            const panel = document.getElementById('playlist-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function playEpisode(idx) {
+            currentEpisode = idx;
+            const ep = episodes[idx];
+            document.getElementById('current-title').textContent = ep.title;
+            initPlaylist();
+            
+            // Simulate loading new video
+            video.pause();
+            videoLoading.classList.remove('hidden');
+            setTimeout(() => {
+                videoLoading.classList.add('hidden');
+                video.currentTime = 0;
+                video.play();
+                showNotification(`Now playing: ${ep.title}`, 'info');
+            }, 800);
+        }
+
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+                playIcon.classList.remove('fa-play');
+                playIcon.classList.add('fa-pause');
+                centerPlay.style.opacity = '0';
+                centerPlay.style.pointerEvents = 'none';
+            } else {
+                video.pause();
+                playIcon.classList.remove('fa-pause');
+                playIcon.classList.add('fa-play');
+                centerPlay.style.opacity = '1';
+                centerPlay.style.pointerEvents = 'auto';
+            }
+        }
+
+        function skip(seconds) {
+            video.currentTime += seconds;
+            showNotification(`Skipped ${seconds > 0 ? 'forward' : 'backward'} ${Math.abs(seconds)}s`, 'info');
+        }
+
+        function toggleMute() {
+            video.muted = !video.muted;
+            const icon = document.getElementById('volume-icon');
+            if (video.muted) {
+                icon.classList.remove('fa-volume-up');
+                icon.classList.add('fa-volume-mute');
+            } else {
+                icon.classList.remove('fa-volume-mute');
+                icon.classList.add('fa-volume-up');
+            }
+        }
+
+        function setVolume(val) {
+            video.volume = val / 100;
+        }
+
+        function seekVideo(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                video.parentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function toggleSettings() {
+            showNotification('Settings: Quality set to Auto (1080p)', 'info');
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        video.addEventListener('timeupdate', () => {
+            const progress = (video.currentTime / video.duration) * 100;
+            progressFill.style.width = `${progress}%`;
+            currentTimeEl.textContent = formatTime(video.currentTime);
+        });
+
+        video.addEventListener('loadedmetadata', () => {
+            durationEl.textContent = formatTime(video.duration);
+        });
+
+        video.addEventListener('ended', () => {
+            playIcon.classList.remove('fa-pause');
+            playIcon.classList.add('fa-play');
+            centerPlay.style.opacity = '1';
+            centerPlay.style.pointerEvents = 'auto';
+            if (currentEpisode < episodes.length - 1) {
+                setTimeout(() => playEpisode(currentEpisode + 1), 2000);
+            }
+        });
+
+        // ============ VIDEO GENERATOR LOGIC ============
+        let uploadedImage = null;
+        let selectedEffectType = 'cinematic';
+        let generatedBlob = null;
+        let animationId = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+
+        const canvas = document.getElementById('generator-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImage = new Image();
+                uploadedImage.onload = () => {
+                    document.getElementById('upload-placeholder').classList.add('hidden');
+                    document.getElementById('upload-preview').classList.remove('hidden');
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('generate-btn').disabled = false;
+                    
+                    // Setup canvas
+                    canvas.width = uploadedImage.width;
+                    canvas.height = uploadedImage.height;
+                    canvas.classList.remove('hidden');
+                    document.getElementById('empty-state').classList.add('hidden');
+                    
+                    showNotification('Image loaded successfully!', 'success');
+                    previewEffect();
+                };
+                uploadedImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearUpload() {
+            uploadedImage = null;
+            document.getElementById('image-input').value = '';
+            document.getElementById('upload-placeholder').classList.remove('hidden');
+            document.getElementById('upload-preview').classList.add('hidden');
+            document.getElementById('generate-btn').disabled = true;
+            canvas.classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+            if (animationId) cancelAnimationFrame(animationId);
+        }
+
+        function dropHandler(e) {
+            e.preventDefault();
+            document.getElementById('upload-zone').classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                document.getElementById('image-input').files = e.dataTransfer.files;
+                handleImageUpload({ target: { files: e.dataTransfer.files } });
+            }
+        }
+
+        function dragOverHandler(e) {
+            e.preventDefault();
+            document.getElementById('upload-zone').classList.add('dragover');
+        }
+
+        function dragLeaveHandler(e) {
+            e.preventDefault();
+            document.getElementById('upload-zone').classList.remove('dragover');
+        }
+
+        function selectEffect(effect) {
+            selectedEffectType = effect;
+            document.querySelectorAll('.effect-card').forEach(card => {
+                card.classList.remove('selected');
+                if (card.dataset.effect === effect) card.classList.add('selected');
+            });
+            if (uploadedImage) previewEffect();
+        }
+
+        function updateDurationLabel(val) {
+            document.getElementById('duration-label').textContent = val + 's';
+        }
+
+        // ============ EFFECT RENDERERS ============
+        function previewEffect() {
+            if (!uploadedImage || !selectedEffectType) return;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            const startTime = Date.now();
+            
+            function render() {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const duration = parseInt(document.getElementById('duration-slider').value);
+                const progress = (elapsed % duration) / duration;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                switch(selectedEffectType) {
+                    case 'cinematic':
+                        renderCinematic(progress);
+                        break;
+                    case 'parallax':
+                        renderParallax(progress);
+                        break;
+                    case 'bloom':
+                        renderBloom(progress);
+                        break;
+                    case 'glitch':
+                        renderGlitch(progress);
+                        break;
+                    case 'water':
+                        renderWater(progress);
+                        break;
+                    case 'particles':
+                        renderParticles(progress, elapsed);
+                        break;
+                }
+                
+                animationId = requestAnimationFrame(render);
+            }
+            render();
+        }
+
+        function renderCinematic(progress) {
+            const scale = 1 + progress * 0.1;
+            const offsetX = (canvas.width * (scale - 1)) / 2;
+            const offsetY = (canvas.height * (scale - 1)) / 2;
+            
+            ctx.save();
+            ctx.translate(canvas.width/2, canvas.height/2);
+            ctx.scale(scale, scale);
+            ctx.translate(-canvas.width/2, -canvas.height/2);
+            ctx.drawImage(uploadedImage, 0, 0);
+            ctx.restore();
+            
+            // Add cinematic bars
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.08);
+            ctx.fillRect(0, canvas.height * 0.92, canvas.width, canvas.height * 0.08);
+        }
+
+        function renderParallax(progress) {
+            const angle = progress * Math.PI * 2;
+            const shiftX = Math.sin(angle) * 20;
+            
+            ctx.save();
+            ctx.translate(canvas.width/2 + shiftX, canvas.height/2);
+            ctx.scale(1.1, 1.1);
+            ctx.translate(-canvas.width/2, -canvas.height/2);
+            ctx.drawImage(uploadedImage, 0, 0);
+            ctx.restore();
+            
+            // Depth overlay
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
+            gradient.addColorStop(0.5, 'rgba(0,0,0,0)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0.3)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function renderBloom(progress) {
+            ctx.drawImage(uploadedImage, 0, 0);
+            
+            const intensity = Math.sin(progress * Math.PI) * 0.5;
+            ctx.fillStyle = `rgba(255,255,255,${intensity * 0.3})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Radial glow
+            const gradient = ctx.createRadialGradient(
+                canvas.width/2, canvas.height/2, 0,
+                canvas.width/2, canvas.height/2, canvas.width/2
+            );
+            gradient.addColorStop(0, `rgba(255,255,200,${intensity * 0.2})`);
+            gradient.addColorStop(1, 'rgba(255,255,200,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function renderGlitch(progress) {
+            ctx.drawImage(uploadedImage, 0, 0);
+            
+            if (Math.random() > 0.9) {
+                const sliceHeight = 20;
+                const y = Math.random() * (canvas.height - sliceHeight);
+                const shift = (Math.random() - 0.5) * 30;
+                
+                ctx.drawImage(
+                    canvas, 
+                    0, y, canvas.width, sliceHeight,
+                    shift, y, canvas.width, sliceHeight
+                );
+                
+                ctx.fillStyle = 'rgba(255,0,0,0.1)';
+                ctx.fillRect(0, y, canvas.width, sliceHeight);
+            }
+            
+            // Scanlines
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            for (let i = 0; i < canvas.height; i += 4) {
+                ctx.fillRect(0, i, canvas.width, 2);
+            }
+        }
+
+        function renderWater(progress) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(uploadedImage, 0, 0);
+            
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.translate(0, Math.sin(progress * Math.PI * 4) * 5);
+            ctx.drawImage(uploadedImage, 0, 0);
+            ctx.restore();
+            
+            // Ripple overlay
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, `rgba(0,150,255,${Math.sin(progress * Math.PI * 2) * 0.1})`);
+            gradient.addColorStop(1, 'rgba(0,150,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        const particles = [];
+        function renderParticles(progress, elapsed) {
+            ctx.drawImage(uploadedImage, 0, 0);
+            
+            // Initialize particles if empty
+            if (particles.length === 0) {
+                for (let i = 0; i < 50; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: Math.random() * 3 + 1,
+                        speed: Math.random() * 2 + 1,
+                        opacity: Math.random() * 0.5 + 0.3
+                    });
+                }
+            }
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            particles.forEach(p => {
+                p.y += p.speed;
+                if (p.y > canvas.height) {
+                    p.y = -10;
+                    p.x = Math.random() * canvas.width;
+                }
+                
+                ctx.globalAlpha = p.opacity * Math.sin(elapsed + p.x);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        // ============ VIDEO GENERATION ============
+        async function generateVideo() {
+            if (!uploadedImage) {
+                showNotification('Please upload an image first', 'error');
+                return;
+            }
+            
+            const duration = parseInt(document.getElementById('duration-slider').value);
+            const overlay = document.getElementById('rendering-overlay');
+            const progressEl = document.getElementById('render-progress');
+            const statusEl = document.getElementById('render-status');
+            
+            overlay.classList.remove('hidden');
+            statusEl.classList.remove('hidden');
+            
+            // Setup MediaRecorder
+            const stream = canvas.captureStream(30);
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 5000000
+            });
+            
+            recordedChunks = [];
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            
+            mediaRecorder.onstop = () => {
+                generatedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                overlay.classList.add('hidden');
+                statusEl.classList.add('hidden');
+                document.getElementById('generated-actions').classList.remove('hidden');
+                showNotification('Video generated successfully!', 'success');
+            };
+            
+            // Start recording with effect
+            mediaRecorder.start();
+            
+            let startTime = Date.now();
+            const interval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const progress = Math.min((elapsed / duration) * 100, 100);
+                progressEl.textContent = Math.floor(progress) + '%';
+                
+                if (elapsed >= duration) {
+                    clearInterval(interval);
+                    mediaRecorder.stop();
+                }
+            }, 100);
+        }
+
+        function downloadVideo() {
+            if (!generatedBlob) return;
+            
+            const url = URL.createObjectURL(generatedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fragrant-video-${Date.now()}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('Video downloaded!', 'success');
+        }
+
+        function addToPlaylist() {
+            if (!generatedBlob) return;
+            
+            const url = URL.createObjectURL(generatedBlob);
+            const newEpisode = {
+                title: `Generated Video - ${selectedEffectType.charAt(0).toUpperCase() + selectedEffectType.slice(1)}`,
+                duration: document.getElementById('duration-slider').value + 's',
+                desc: 'AI-generated video with ' + selectedEffectType + ' effect',
+                src: url
+            };
+            
+            episodes.push(newEpisode);
+            document.getElementById('playlist-count').textContent = episodes.length;
+            
+            showNotification('Added to playlist! Switch to Player to view.', 'success');
+        }
+
+        // Initialize
+        initPlaylist();
+        showNotification('Welcome to Fragrant Flowers Blossom HD Player', 'info');
+    </script>
+</body>
+</html>
